@@ -56,7 +56,7 @@ def get_slurm_jobs():
     """Get current SLURM job status for this user."""
     try:
         result = subprocess.run(
-            ['squeue', '-u', os.environ.get('USER', 'unknown'), '-o', '%A,%a,%j,%T,%M,%N,%r'],
+            ['squeue', '-u', os.environ.get('USER', 'unknown'), '-o', '%i %j %T %M %N %r'],
             capture_output=True, text=True, timeout=10
         )
         if result.returncode != 0:
@@ -66,18 +66,23 @@ def get_slurm_jobs():
         lines = result.stdout.strip().split('\n')
         if len(lines) > 1:  # Skip header
             for line in lines[1:]:
-                parts = line.split(',')
-                if len(parts) >= 6:
-                    job_id = parts[0]
-                    array_id = parts[1]
-                    name = parts[2]
-                    state = parts[3]
-                    time_used = parts[4]
-                    node = parts[5]
-                    reason = parts[6] if len(parts) > 6 else ''
+                parts = line.split()
+                if len(parts) >= 4:
+                    job_id_full = parts[0]  # e.g., "2237_[5-108%4]" or "2237_1"
+                    name = parts[1]
+                    state = parts[2]
+                    time_used = parts[3]
+                    node = parts[4] if len(parts) > 4 else ''
+                    reason = parts[5] if len(parts) > 5 else ''
                     
-                    full_id = f"{job_id}_{array_id}" if array_id else job_id
-                    jobs[full_id] = {
+                    # Parse job_id and array_id
+                    if '_' in job_id_full:
+                        job_id, array_id = job_id_full.split('_', 1)
+                    else:
+                        job_id = job_id_full
+                        array_id = ''
+                    
+                    jobs[job_id_full] = {
                         'job_id': job_id,
                         'array_id': array_id,
                         'name': name,
@@ -142,12 +147,39 @@ def get_expected_experiments():
     return experiments
 
 
+def parse_log_for_progress(log_file):
+    """Parse log.txt to get current iteration progress."""
+    try:
+        with open(log_file, 'r') as f:
+            content = f.read()
+        
+        # Look for iteration logs like "256 iteration" or "512 iteration"
+        import re
+        matches = re.findall(r'(\d+) iteration', content)
+        if matches:
+            current_iter = int(matches[-1])  # Get last iteration number
+            # Total iterations from config (default 16384 for WRN, 8192 for ViT)
+            total_iter = 16384  # Default
+            if 'vit' in log_file.lower():
+                total_iter = 8192
+            progress_pct = 100 * current_iter / total_iter
+            return {
+                'current_iter': current_iter,
+                'total_iter': total_iter,
+                'progress_percent': progress_pct,
+            }
+    except Exception:
+        pass
+    return None
+
+
 def get_experiment_status(exp_name):
     """Get detailed status of a single experiment."""
     exp_dir = RESULTS_DIR / exp_name
     status_file = exp_dir / 'status.json'
     metrics_file = exp_dir / 'metrics.json'
     checkpoint_file = exp_dir / 'metrics_checkpoint.json'
+    log_file = exp_dir / 'log.txt'
     
     result = {
         'name': exp_name,
@@ -170,6 +202,12 @@ def get_experiment_status(exp_name):
             result.update(status_data)
         except json.JSONDecodeError:
             result['status'] = 'CORRUPTED'
+    
+    # Parse log.txt for progress (even before checkpoint exists)
+    if log_file.exists() and result.get('status') == 'RUNNING':
+        log_progress = parse_log_for_progress(str(log_file))
+        if log_progress:
+            result['progress'] = log_progress
     
     # Check metrics.json (final results)
     if metrics_file.exists():
@@ -365,9 +403,18 @@ def print_dashboard(report, args):
             for exp in running_exps[:10]:
                 progress = exp.get('progress', {})
                 pct = progress.get('progress_percent', 0)
-                elapsed = progress.get('elapsed_hours', 0)
-                node = exp.get('node', 'unknown')
-                print(f"│  {exp['name']:<45} {pct:5.1f}% {elapsed:.1f}h {node:<10}│")
+                current_iter = progress.get('current_iter', 0)
+                total_iter = progress.get('total_iter', 16384)
+                # Calculate elapsed from start time
+                elapsed_hrs = 0
+                if 'started_at' in exp:
+                    try:
+                        start = datetime.fromisoformat(exp['started_at'])
+                        elapsed_hrs = (datetime.now() - start).total_seconds() / 3600
+                    except:
+                        pass
+                node = exp.get('node', 'n/a')
+                print(f"│  {exp['name']:<40} {current_iter:>5}/{total_iter} {pct:5.1f}% {elapsed_hrs:.1f}h │")
             if len(running_exps) > 10:
                 print(f"│  ... and {len(running_exps) - 10} more                                           │")
             print("└" + "─"*78 + "┘")
@@ -409,12 +456,28 @@ def print_dashboard(report, args):
     # ========== SLURM QUEUE ==========
     slurm_jobs = get_slurm_jobs()
     if slurm_jobs:
-        print(f"\n┌─ SLURM QUEUE ({len(slurm_jobs)} jobs) " + "─"*53 + "┐")
         running_jobs = [j for j in slurm_jobs.values() if j['state'] == 'RUNNING']
         pending_jobs = [j for j in slurm_jobs.values() if j['state'] == 'PENDING']
-        print(f"│  Running: {len(running_jobs):<5} Pending in queue: {len(pending_jobs):<5}                        │")
+        # Count pending array jobs properly
+        pending_count = 0
+        for j in pending_jobs:
+            # Array job format: [5-108%4] means 104 jobs pending
+            if '[' in j.get('array_id', ''):
+                import re
+                match = re.search(r'\[(\d+)-(\d+)', j['array_id'])
+                if match:
+                    pending_count += int(match.group(2)) - int(match.group(1)) + 1
+                else:
+                    pending_count += 1
+            else:
+                pending_count += 1
+        
+        print(f"\n┌─ SLURM QUEUE " + "─"*64 + "┐")
+        print(f"│  Running: {len(running_jobs):<5} Pending: {pending_count:<5} (limited to 4 concurrent)           │")
         for job in list(running_jobs)[:4]:
-            print(f"│    [{job['job_id']}_{job['array_id']}] {job['state']:<10} {job['time']:<10} {job['node']:<12}│")
+            job_time = job.get('time', '0:00')
+            job_node = job.get('node', 'n/a')
+            print(f"│    Job {job['job_id']}_{job['array_id']}: {job['state']:<10} {job_time:<10} {job_node:<12}│")
         print("└" + "─"*78 + "┘")
     
     print()
