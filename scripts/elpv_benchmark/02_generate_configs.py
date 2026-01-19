@@ -137,6 +137,9 @@ COMMON_CONFIG = {
     'crop_ratio': 0.875,
     'epoch': 1,
     
+    # GPU - CRITICAL: Must specify GPU index
+    'gpu': 0,
+    
     # SSL parameters
     'uratio': 7,
     'ulb_loss_ratio': 1.0,
@@ -147,7 +150,7 @@ COMMON_CONFIG = {
     'lb_imb_ratio': 1,
     'ulb_imb_ratio': 1,
     'ulb_num_labels': None,
-    'num_workers': 4,
+    'num_workers': 0,  # Disabled multiprocessing - MIG partitions have limited CPU
     
     # Other
     'momentum': 0.9,

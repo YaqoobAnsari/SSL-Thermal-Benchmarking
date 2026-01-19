@@ -1,4 +1,4 @@
-created: '2026-01-19T07:47:49.231214'
+created: '2026-01-19T08:24:44.004127'
 design: LEAN - IEEE TII Submission
 seeds:
 - 0
@@ -30,6 +30,7 @@ common_config:
   num_classes: 2
   crop_ratio: 0.875
   epoch: 1
+  gpu: 0
   uratio: 7
   ulb_loss_ratio: 1.0
   ema_m: 0.999
@@ -37,7 +38,7 @@ common_config:
   lb_imb_ratio: 1
   ulb_imb_ratio: 1
   ulb_num_labels: null
-  num_workers: 4
+  num_workers: 0
   momentum: 0.9
   amp: true
   clip_grad: 0.0

@@ -2,6 +2,7 @@ dataset: elpv
 num_classes: 2
 crop_ratio: 0.875
 epoch: 1
+gpu: 0
 uratio: 7
 ulb_loss_ratio: 50.0
 ema_m: 0.999
@@ -9,7 +10,7 @@ include_lb_to_ulb: true
 lb_imb_ratio: 1
 ulb_imb_ratio: 1
 ulb_num_labels: null
-num_workers: 4
+num_workers: 0
 momentum: 0.9
 amp: true
 clip_grad: 0.0
