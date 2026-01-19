@@ -47,6 +47,9 @@ results/elpv_benchmark/experiments/
 logs/*.out
 logs/*.err
 
+# SLURM logs
+scripts/elpv_benchmark/slurm/logs/
+
 # Keep aggregated results
 # !results/elpv_benchmark/aggregated/
 
