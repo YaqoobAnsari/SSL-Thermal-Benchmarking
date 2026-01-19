@@ -41,10 +41,9 @@ RESULTS_DIR = BASE_DIR / 'results' / 'elpv_benchmark' / 'experiments'
 CONFIGS_DIR = BASE_DIR / 'configs' / 'elpv_benchmark'
 SLURM_LOGS_DIR = BASE_DIR / 'scripts' / 'elpv_benchmark' / 'slurm' / 'logs'
 
-# Experiment matrix
-SSL_ALGORITHMS = ['supervised', 'fixmatch', 'flexmatch', 'freematch', 'softmatch', 
-                  'meanteacher', 'abc', 'darp', 'daso']
-BACKBONES = ['wrn_28_2', 'vit_b_16']
+# Experiment matrix - LEAN DESIGN
+SSL_ALGORITHMS = ['supervised', 'flexmatch', 'darp', 'meanteacher']
+BACKBONES = ['wrn_28_2', 'vit_tiny_patch2_32']
 LABEL_AMOUNTS = [10, 50, 200, 800]
 SEEDS = [0, 1, 2]
 

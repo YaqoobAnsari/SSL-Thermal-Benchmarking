@@ -3,13 +3,13 @@
 # ELPV SSL Benchmark - Submit Jobs for a Single Backbone
 # ============================================================================
 #
-# LEAN DESIGN: 216 total experiments
-# - WRN-28-2: 108 experiments (~27h with 4 parallel)
-# - ViT-B/16: 108 experiments (~67h with 4 parallel)
+# LEAN DESIGN: 96 total experiments (4 methods × 2 backbones × 4 labels × 3 seeds)
+# - WRN-28-2: 48 experiments (~10h each = 120h total with 4 parallel = 5 days)
+# - ViT-Tiny: 48 experiments (~2h each = 24h total with 4 parallel = 1 day)
 #
 # Usage:
 #   ./submit_backbone.sh wrn_28_2
-#   ./submit_backbone.sh vit_b_16
+#   ./submit_backbone.sh vit_tiny_patch2_32
 #
 # ============================================================================
 
@@ -25,16 +25,16 @@ MCS_LABEL="TUBITAK"
 # Check argument
 if [ -z "$1" ]; then
     echo "Usage: $0 <backbone>"
-    echo "  backbone: wrn_28_2, vit_b_16"
+    echo "  backbone: wrn_28_2, vit_tiny_patch2_32"
     exit 1
 fi
 
 BACKBONE=$1
 
 # Validate backbone
-if [[ ! "$BACKBONE" =~ ^(wrn_28_2|vit_b_16)$ ]]; then
+if [[ ! "$BACKBONE" =~ ^(wrn_28_2|vit_tiny_patch2_32)$ ]]; then
     echo "ERROR: Invalid backbone: $BACKBONE"
-    echo "Valid options: wrn_28_2, vit_b_16"
+    echo "Valid options: wrn_28_2, vit_tiny_patch2_32"
     exit 1
 fi
 
@@ -53,13 +53,15 @@ N_CONFIGS=$(wc -l < "$CONFIG_LIST")
 case $BACKBONE in
     wrn_28_2)
         GPU_SPEC="gpu:nvidia_h200_1g.18gb:1"
-        TIME_LIMIT="02:00:00"  # 2 hours per job
+        TIME_LIMIT="12:00:00"  # 12 hours per job (safe margin for ~10h)
         MEM="32G"
+        EST_TIME="~5 days (48 jobs × 10h / 4 parallel)"
         ;;
-    vit_b_16)
-        GPU_SPEC="gpu:nvidia_h200_2g.35gb:1"
-        TIME_LIMIT="04:00:00"  # 4 hours per job
-        MEM="48G"
+    vit_tiny_patch2_32)
+        GPU_SPEC="gpu:nvidia_h200_1g.18gb:1"  # Tiny ViT can use smaller GPU
+        TIME_LIMIT="04:00:00"  # 4 hours per job (safe margin for ~2h)
+        MEM="24G"
+        EST_TIME="~1 day (48 jobs × 2h / 4 parallel)"
         ;;
 esac
 
@@ -76,15 +78,11 @@ echo "MCS Label: $MCS_LABEL"
 echo "Max concurrent jobs: 4 (CMUQ policy)"
 echo ""
 echo "Estimated completion time:"
-if [ "$BACKBONE" == "wrn_28_2" ]; then
-    echo "  ~27 hours (108 jobs × 1h / 4 parallel)"
-else
-    echo "  ~67 hours (108 jobs × 2.5h / 4 parallel)"
-fi
+echo "  $EST_TIME"
 echo "=============================================================="
 
 # Create logs directory
-mkdir -p "$BASE_DIR/logs"
+mkdir -p "$SCRIPT_DIR/logs"
 
 # Build sbatch command
 # Using %4 to limit to 4 concurrent jobs (CMUQ policy)

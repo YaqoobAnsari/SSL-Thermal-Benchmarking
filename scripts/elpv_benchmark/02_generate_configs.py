@@ -30,20 +30,21 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 SEEDS = [0, 1, 2]
 LABEL_AMOUNTS = [10, 50, 200, 800]  # Reduced from 7 to 4
 
-# SOTA SSL algorithms
-SOTA_ALGORITHMS = ['fixmatch', 'flexmatch', 'freematch', 'softmatch']
+# LEAN DESIGN: 4 methods only
+# SOTA
+SOTA_ALGORITHMS = ['flexmatch']
 
-# Imbalance-aware algorithms (use FixMatch as base)
-IMB_ALGORITHMS = ['abc', 'darp', 'daso']
+# Imbalance-aware (DARP is best of ABC/DARP/DASO)
+IMB_ALGORITHMS = ['darp']
 
-# Classic algorithm
+# Classic
 CLASSIC_ALGORITHMS = ['meanteacher']
 
 # All SSL algorithms
 ALL_SSL_ALGORITHMS = SOTA_ALGORITHMS + IMB_ALGORITHMS + CLASSIC_ALGORITHMS
 
-# Backbones: 1 CNN + 1 Transformer
-BACKBONES = ['wrn_28_2', 'vit_b_16']
+# Backbones: WRN-28-2 (CNN) + ViT-Tiny (fast transformer)
+BACKBONES = ['wrn_28_2', 'vit_tiny_patch2_32']
 
 # Backbone-specific hyperparameters
 BACKBONE_CONFIGS = {
@@ -61,18 +62,18 @@ BACKBONE_CONFIGS = {
         'num_eval_iter': 512,
         'num_warmup_iter': 512,
     },
-    'vit_b_16': {
-        'net': 'vit_base_patch16_224',
+    'vit_tiny_patch2_32': {
+        'net': 'vit_tiny_patch2_32',
         'net_from_name': False,
-        'img_size': 224,
-        'batch_size': 16,  # Smaller batch for ViT
-        'eval_batch_size': 32,
-        'lr': 5e-5,
+        'img_size': 32,  # Small input for speed
+        'batch_size': 64,  # Can use larger batch with tiny model
+        'eval_batch_size': 128,
+        'lr': 1e-3,
         'optim': 'AdamW',
         'weight_decay': 0.01,
-        'use_pretrain': True,
-        'layer_decay': 0.65,  # Layer-wise LR decay for ViT
-        'num_train_iter': 8192,  # Fewer iterations for pretrained
+        'use_pretrain': False,  # Train from scratch
+        'layer_decay': 1.0,
+        'num_train_iter': 8192,
         'num_eval_iter': 256,
         'num_warmup_iter': 256,
     },
