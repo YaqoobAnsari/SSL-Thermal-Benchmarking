@@ -1,0 +1,96 @@
+# =============================================================================
+# SSL-Thermal-Benchmarking .gitignore
+# =============================================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+ssl_env/
+ssl_bench/
+
+# Data files (large, should be downloaded separately)
+data/cifar10/
+data/cifar100/
+data/elpv-dataset/
+*.tar.gz
+*.zip
+
+# Keep data splits (small, important for reproducibility)
+# !data/elpv/splits/
+
+# Results (generated, can be large)
+results/elpv_benchmark/experiments/
+logs/*.out
+logs/*.err
+
+# Keep aggregated results
+# !results/elpv_benchmark/aggregated/
+
+# Model checkpoints (large)
+*.pth
+*.pt
+*.ckpt
+
+# Numpy files (except splits)
+# *.npy  # Keep splits
+# *.npz
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+.Spotlight-V100
+.Trashes
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+
+# pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
