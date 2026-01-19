@@ -1,0 +1,20 @@
+==============================================================
+ELPV SSL Benchmark - Job Started
+==============================================================
+Job ID: 2143
+Array Task ID: 27
+Node: deepnet2
+Backbone: wrn_28_2
+GPU: MIG-63774948-299b-5307-8ea4-f5e69f88e0ff
+Start Time: Mon Jan 19 07:57:28 +03 2026
+==============================================================
+Python: 
+PyTorch: 
+CUDA Available: 
+Config file: /data1/yansari/SSL-Benchmarking/Semi-supervised-learning/configs/elpv_benchmark/experiments/freematch_wrn_28_2_10_seed2.yaml
+==============================================================
+==============================================================
+Job Finished
+Exit Code: 127
+End Time: Mon Jan 19 07:57:28 +03 2026
+==============================================================

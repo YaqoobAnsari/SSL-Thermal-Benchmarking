@@ -1,0 +1,5 @@
+/var/spool/slurmd/job02170/slurm_script: line 36: /opt/anaconda3/etc/profile.d/conda.sh: Permission denied
+/var/spool/slurmd/job02170/slurm_script: line 37: conda: command not found
+/var/spool/slurmd/job02170/slurm_script: line 41: python: command not found
+/var/spool/slurmd/job02170/slurm_script: line 42: python: command not found
+/var/spool/slurmd/job02170/slurm_script: line 66: python: command not found
