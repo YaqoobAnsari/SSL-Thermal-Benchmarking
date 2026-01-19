@@ -204,10 +204,21 @@ def get_experiment_status(exp_name):
             result['status'] = 'CORRUPTED'
     
     # Parse log.txt for progress (even before checkpoint exists)
-    if log_file.exists() and result.get('status') == 'RUNNING':
+    if log_file.exists():
         log_progress = parse_log_for_progress(str(log_file))
         if log_progress:
             result['progress'] = log_progress
+        
+        # Check if log was updated recently (within 15 mins) to determine if truly running
+        log_mtime = log_file.stat().st_mtime
+        log_age_minutes = (time.time() - log_mtime) / 60
+        if result.get('status') == 'RUNNING' and log_age_minutes < 15:
+            # Log is fresh, job is definitely running
+            pass
+        elif result.get('status') == 'RUNNING' and log_age_minutes >= 15:
+            # Log is stale, might be interrupted
+            result['status'] = 'INTERRUPTED'
+            result['stale_minutes'] = log_age_minutes
     
     # Check metrics.json (final results)
     if metrics_file.exists():
@@ -242,16 +253,7 @@ def get_experiment_status(exp_name):
                 'progress_percent': checkpoint.get('runtime', {}).get('progress_percent', 0),
                 'elapsed_hours': checkpoint.get('runtime', {}).get('elapsed_seconds', 0) / 3600,
             }
-            # If has checkpoint but no final metrics, might be interrupted
-            if result['status'] == 'PENDING' or result['status'] == 'RUNNING':
-                # Check if status file says running but no recent activity
-                if result.get('status') == 'RUNNING':
-                    # Check modification time
-                    mtime = checkpoint_file.stat().st_mtime
-                    age_minutes = (time.time() - mtime) / 60
-                    if age_minutes > 10:  # No update in 10 minutes
-                        result['status'] = 'INTERRUPTED'
-                        result['stale_minutes'] = age_minutes
+            # Note: staleness check now done via log.txt above
         except json.JSONDecodeError:
             pass
     
